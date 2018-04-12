@@ -1,0 +1,16 @@
+{
+  "name": "cypress-browser-extension-preprocessor",
+  "version": "1.0.0",
+  "description": "Cypress plugin that lets you test a Web extension by working around some security limitations",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cypress",
+    "plugin",
+    "extension"
+  ],
+  "author": "Emmanuel Joubaud",
+  "license": "ISC"
+}
