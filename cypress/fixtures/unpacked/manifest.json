@@ -1,0 +1,25 @@
+{
+  "name": "Unpacked",
+  "short_name": "unpacked",
+  "description": "Minimal unpacked extension, that sets some stuff to the local storage in the background tab",
+  "version": "0.0.0",
+  "manifest_version": 2,
+  "permissions": [
+    "storage"
+  ],
+  "background": {
+    "scripts": [
+      "background.js"
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*/*"
+      ],
+      "js": [
+        "contentscript.js"
+      ]
+    }
+  ]
+}

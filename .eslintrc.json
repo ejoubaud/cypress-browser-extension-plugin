@@ -1,3 +1,14 @@
 {
-    "extends": "airbnb-base"
+    "extends": "airbnb-base",
+    "rules": {
+        "prefer-arrow-callback": [ "error", { "allowNamedFunctions": true } ],
+        "no-console": "off",
+        "object-curly-newline": [ "false", { "ObjectPattern": { "multiline": true } } ]
+    },
+    "plugins": [
+        "cypress"
+    ],
+    "env": {
+        "cypress/globals": true
+    }
 }

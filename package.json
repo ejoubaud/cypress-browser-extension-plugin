@@ -14,8 +14,14 @@
   "author": "Emmanuel Joubaud",
   "license": "ISC",
   "devDependencies": {
+    "cypress": "^2.1.0",
     "eslint": "^4.19.1",
     "eslint-config-airbnb-base": "^12.1.0",
+    "eslint-plugin-cypress": "^2.0.1",
     "eslint-plugin-import": "^2.10.0"
+  },
+  "dependencies": {
+    "fs-extra": "^5.0.0",
+    "nanoid": "^1.0.2"
   }
 }
