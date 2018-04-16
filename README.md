@@ -5,7 +5,7 @@ This Cypress plugin provides a few helpers to help you test your browser extensi
 ## Installation
 
 ```
-npm install --save-dev cypress-browser-extension-preprocessor
+npm install --save-dev cypress-browser-extension-plugin
 ```
 
 ## Basic Usage
@@ -13,7 +13,7 @@ npm install --save-dev cypress-browser-extension-preprocessor
 In your project's [plugins file](https://on.cypress.io/guides/guides/plugins.html):
 
 ```javascript
-const loadExtension = require('cypress-browser-extension-preprocessor');
+const loadExtension = require('cypress-browser-extension-plugin');
 
 module.exports = (on) => {
   on('before:browser:launch', loadExtension('/path/to/your/extension'));
@@ -23,7 +23,7 @@ module.exports = (on) => {
 Then in your spec/support files:
 
 ```javascript
-const createHelpers = require('cypress-browser-extension-preprocessor/helpers');
+const createHelpers = require('cypress-browser-extension-plugin/helpers');
 const myExtension = createHelpers();
 
 beforeEach(function() {
@@ -74,7 +74,7 @@ myExt.execCommand('tabs.TAB_ID_NONE').then((idNone) => /*.*/);  // accessing a p
 You can customize the helpers context config:
 
 ```javascript
-const myOtherExtension = require('cypress-browser-extension-preprocessor/helpers')({
+const myOtherExtension = require('cypress-browser-extension-plugin/helpers')({
   alias: 'myOtherExtension', // if you've loaded 2+ extensions in the loader w/ aliases, default 'myExtension'
   debug: true,               // spam the JS console with debug messages to debug issues, default false
   timeout: 5000,             // time waiting for commands to extension backend to reply, default to 2000

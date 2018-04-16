@@ -1,6 +1,6 @@
 {
-  "name": "cypress-browser-extension-preprocessor",
-  "version": "1.0.0",
+  "name": "cypress-browser-extension-plugin",
+  "version": "0.1.0",
   "description": "Cypress plugin that lets you test a Web extension by working around some security limitations",
   "main": "index.js",
   "scripts": {
