@@ -3,7 +3,7 @@
     "rules": {
         "prefer-arrow-callback": [ "error", { "allowNamedFunctions": true } ],
         "no-console": "off",
-        "object-curly-newline": [ "false", { "ObjectPattern": { "multiline": true } } ]
+        "object-curly-newline": [ "error", { "ObjectPattern": { "multiline": true } } ]
     },
     "plugins": [
         "cypress"
