@@ -4,6 +4,9 @@
 // to the background tab and access the browser/chrome object and the local storage
 // It MUST be standalone (no require/import will work, this is simple copy, not Webpack)
 // It MAY contain an {{alias}} placeholder, to link it to a specific extension
+const listenerSource = 'CypressBrowserExtensionBackgroundListener';
+const responseSource = 'CypressBrowserExtensionBackgroundResponse';
+
 const listeners = {};
 
 // Duplicated log function since we can't (yet) use require in templates
@@ -62,8 +65,12 @@ function addListener(message) {
   if (debug) log(`Adding listener ${listenerId} to ${property}`, message);
   const target = getProperty(chrome, property);
   const listener = function browserListener(payload) {
+    // don't relay inner-working events of the plugin, in case this is a runtime.onMessage listener
+    if (payload && payload.cypressExtType) return;
+    if (debug) log(`Calling listener ${listenerId} on ${property}`, payload, message);
     chrome.runtime.sendMessage({
-      source: 'CypressBrowserExtensionBackgroundListener',
+      cypressExtType: 'BrowserListener',
+      source: listenerSource,
       listenerId,
       property,
       debug,
@@ -85,7 +92,11 @@ function removeListener(message) {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const type = message.cypressExtType;
   if (type === 'BrowserCommand') {
-    executeBrowserCommand(message).then(sendResponse);
+    const { responseId } = message;
+    executeBrowserCommand(message).then(
+      response => sendResponse({ responseId, source: responseSource, response }),
+      error => sendResponse({ responseId, source: responseSource, error }),
+    );
     // tells browser API the response to sendResponse will be async
     return true;
   } else if (type === 'BrowserSubscription') {

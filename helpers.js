@@ -62,8 +62,7 @@ function sendBrowserCommand({ alias, timeout, debug, returnType }, property, met
 // alias is used to identify the extension if there are several
 // property identifies the browser object (chrome) property on which to add a listener
 // e.g. "runtime.onMessage" => browser.runtime.onMessage.addListener
-// name is used to identity the specific listener if there are several on the property
-function addBrowserListener({ alias, debug }, property, name, listener) {
+function addBrowserListener({ alias, debug }, property, listener) {
   const listenerId = nanoid(); // Unique ID for later listener storage/retrieval in the background
   if (debug) log(`Adding ${property} listener ${listenerId}`, alias, listener);
   targetWindow.postMessage({
