@@ -6,6 +6,7 @@
 // It MAY contain an {{alias}} placeholder, to link it to a specific extension
 const targetWindow = window.top;
 
+
 // Duplicated log function since we can't (yet) use require in templates
 function log(txt, ...rest) { console.log(`%cCypress ext contentscript %c${txt}`, 'color: gray; font-weight: lighter;', 'font-weight: bolder;', ...rest); }
 const logMethod = method => (method ? `.${method}()` : '');
@@ -14,22 +15,14 @@ targetWindow.addEventListener('message', function relayCommandsToBackground(even
   if (
     event.data &&
     event.data.cypressExtType &&
-    event.data.source === 'CypressBrowserExtensionHelpers' &&
     event.data.alias === '{{alias}}'
   ) {
     const { debug, property, method, cypressExtType } = event.data;
     if (debug) log(`Relaying ${cypressExtType} to backend: ${property}${logMethod(method)}`, event.data);
     chrome.runtime.sendMessage(event.data, (rawResponse) => {
-      if (typeof rawResponse === 'undefined') return; // sync calls, like add/removeEventListener, don't warrant a callback to Cypress helpers
+      if (typeof rawResponse === 'undefined') return; // sync calls, should we ever add any, don't warrant a callback to Cypress helpers
       if (debug) log(`Relaying ${rawResponse.error ? 'Error' : 'Success'} ${cypressExtType} ${property}${logMethod(method)} response`, rawResponse, 'to', event.data);
       targetWindow.postMessage(rawResponse, '*');
     });
-  }
-});
-
-chrome.runtime.onMessage.addListener(function relayBrowserEventsToListener(message) {
-  if (message.source === 'CypressBrowserExtensionBackgroundListener') {
-    if (message.debug) log(`Relaying listener Event ${message.property}`, message);
-    targetWindow.postMessage(message, '*');
   }
 });

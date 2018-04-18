@@ -56,12 +56,12 @@ myExt.setStorage(type, obj);     // => chrome.storage[type].set(obj) storage ('l
 myExt.getStorage(type, [k1,k2]); // => chrome.storage[type].set(obj) storage ('local' or 'sync')
 ```
 
-If you really(?) need more, the `execCommand` helper gives you access to the whole browser extension API, with a few caveats:
+If you really(?) need more, the `execCommand` helper gives you access to the wider browser extension API, with a few caveats:
 
-1. you can only pass JSONifiable args, no function (because they'll go through `window.postMessage` and `runtime.sendMessage`)
-2. your args must be passed as a `[arg1, arg2, ...]` array, single args as `[arg]`
-3. it always returns a promise, that will eventually resolve to the result of the method/property called, assuming it's JSONifiable (won't work with function results, though it will relay the result of a promise/callback)
-4. if you're calling a synchronous API method, you need to let the plugin know with the `{returnType: 'sync'}` option (by default, the plugin assumes browser API methods are async and passes them  promisified callback, which can causes errors if the method expects sync arguments)
+1. you can only pass JSONifiable args, no function (because they'll go through `window.postMessage` and `runtime.sendMessage`), so event listeners are not supported
+2. your args must be passed as a `[arg1, arg2, ...]` array, single args as `[arg]` (don't forget the wrapping array)
+3. it always returns a promise, that will resolve to the result of the method/property called, assuming it's JSONifiable
+4. if you're calling a synchronous API method, you need to let the plugin know with the `{returnType: 'sync'}` option (by default, the plugin assumes the methods you're calling on the browser API are async and callback-based ; it passes them  callback, from which it generates a promise ; that can cause errors or the response to get lost if the method actually expects sync arguments and no callback)
 
 ```javascript
 // generic helper: `.execCommand(property, method, args, options)`
@@ -90,21 +90,6 @@ myExt.execCommand('runtime', 'postMessage', [msg], {
   timeout: 5000,              // change timeout
   returnType: 'sync'          // tell the backend to expect a sync response from the method, rather than pass it a callback (default 'callback')
 }).then(/*.*/);
-```
-
-Finally you can also emulate background listeners, with a few caveats:
-
-1. the listener callback will be executed in the Cypress tab/window, not in the background, but a listener will be added in the backend that will transmit the event back to your listener via `window.postMessage` and `runtime.sendMessage` calls
-2. the event and its content have to be JSONifiable
-3. only the first arg of the listeners will be transmitted back
-
-```javascript
-// `.addListener(property, listener, opts)`
-myExt.addListener('runtime.onMessage', (msg) => { doSomething(msg) }); // emulates `chrome.runtime.onMessage.addListener(doSomething)`
-// `.removeListener(property, listener, opts)`
-myExt.removeListener('runtime.onMessage', (msg) => { doSomething(msg) }); // removes listener
-// a relevant subset of context options are supported
-myExt.addListener('runtime.onMessage', myCb, {debug: true, alias: 'otherExt'});
 ```
 
 ## Why?

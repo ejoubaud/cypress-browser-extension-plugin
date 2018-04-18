@@ -4,13 +4,12 @@
 // to the background tab and access the browser/chrome object and the local storage
 // It MUST be standalone (no require/import will work, this is simple copy, not Webpack)
 // It MAY contain an {{alias}} placeholder, to link it to a specific extension
-const listenerSource = 'CypressBrowserExtensionBackgroundListener';
-const responseSource = 'CypressBrowserExtensionBackgroundResponse';
-
-const listeners = {};
 
 // Duplicated log function since we can't (yet) use require in templates
 function log(txt, ...rest) { console.log(`%cCypress ext bg %c${txt}`, 'color: gray; font-weight: lighter;', 'font-weight: bolder;', ...rest); }
+
+const responseType = 'BrowserCommandResponse';
+const commandType = 'BrowserCommand';
 
 function getProperty(chrome, property) {
   if (!property || property.trim() === '') return chrome;
@@ -60,50 +59,16 @@ function executeBrowserCommand(message) {
   return promise;
 }
 
-function addListener(message) {
-  const { debug, listenerId, property } = message;
-  if (debug) log(`Adding listener ${listenerId} to ${property}`, message);
-  const target = getProperty(chrome, property);
-  const listener = function browserListener(payload) {
-    // don't relay inner-working events of the plugin, in case this is a runtime.onMessage listener
-    if (payload && payload.cypressExtType) return;
-    if (debug) log(`Calling listener ${listenerId} on ${property}`, payload, message);
-    chrome.runtime.sendMessage({
-      cypressExtType: 'BrowserListener',
-      source: listenerSource,
-      listenerId,
-      property,
-      debug,
-      payload,
-    });
-  };
-  listeners[message.listenerId] = listener;
-  target.addListener(listener);
-}
-
-function removeListener(message) {
-  const { debug, listenerId, property } = message;
-  if (debug) log(`Removing listener ${listenerId} from ${property}`, message);
-  const target = getProperty(chrome, property);
-  target.removeListener(listeners[listenerId]);
-  delete listeners[listenerId];
-}
-
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  const type = message.cypressExtType;
-  if (type === 'BrowserCommand') {
+  if (message.cypressExtType === commandType) {
     const { responseId } = message;
+    const cypressExtType = responseType;
     executeBrowserCommand(message).then(
-      response => sendResponse({ responseId, source: responseSource, response }),
-      error => sendResponse({ responseId, source: responseSource, error }),
+      response => sendResponse({ responseId, cypressExtType, response }),
+      error => sendResponse({ responseId, cypressExtType, error }),
     );
     // tells browser API the response to sendResponse will be async
     return true;
-  } else if (type === 'BrowserSubscription') {
-    addListener(message);
-  } else if (type === 'BrowserUnsubscription') {
-    removeListener(message);
   }
-  // default to sync sendResponse or no response
   return false;
 });
