@@ -13,7 +13,7 @@ const defaultOptions = {
   contentHookTemplate: fs.readFileSync(path.join(__dirname, 'templates', 'contentscript.js'), 'utf8'),
 };
 
-function handleOptions(userOptions) {
+function handleOptionsDefaults(userOptions) {
   return Object.assign(
     {},
     defaultOptions,
@@ -32,6 +32,8 @@ function copyHookFile(templateContent, destDir, fileName, alias) {
 }
 
 function buildExtension(opts) {
+  if (!fs.existsSync(opts.source)) throw new Error(`No file found at extension source ${opts.source}`);
+
   // eslint-disable-next-line no-console
   console.log(`Cypress Extensions: Copying and preparing extension ${opts.alias} from ${opts.source} to ${opts.destDir}`);
   // Copy ext to tmp dir
@@ -64,22 +66,28 @@ function buildExtension(opts) {
   fs.writeJsonSync(path.join(opts.destDir, 'manifest.json'), manifest);
 }
 
-module.exports = (userOptions = {}) => {
-  const opts = handleOptions(userOptions);
-  if (!fs.existsSync(opts.source)) throw new Error(`No file found at extension source ${opts.source}`);
+module.exports = (...extensionDefinitions) => {
+  const definitions = extensionDefinitions.map(handleOptionsDefaults);
 
-  buildExtension(opts);
+  definitions.forEach(buildExtension);
 
-  return function loadExtension(browser = {}, args) {
-    if (!opts.validBrowsers || opts.validBrowsers.includes(browser.name)) {
-      const existingLoadArgIndex = args.findIndex(arg => (typeof arg === 'string') && arg.startsWith('--load-extension='));
+  return function loadExtensions(browser = {}, args) {
+    const toLoad = definitions.filter(opts => (
+      !opts.validBrowsers || opts.validBrowsers.includes(browser.name)
+    ));
+    if (toLoad.length > 0) {
+      const dirList = toLoad.map(o => o.destDir).join(',');
+      const existingLoadArgIndex = args.findIndex(arg => (
+        (typeof arg === 'string') && arg.startsWith('--load-extension=')
+      ));
       if (existingLoadArgIndex >= 0) {
         // eslint-disable-next-line no-param-reassign
-        args[existingLoadArgIndex] = `${args[existingLoadArgIndex]},${opts.destDir}`;
+        args[existingLoadArgIndex] = `${args[existingLoadArgIndex]},${dirList}`;
       } else {
-        args.push(`--load-extension=${opts.destDir}`);
+        args.push(`--load-extension=${dirList}`);
       }
     }
+    console.log(args);
     return args;
   };
 };

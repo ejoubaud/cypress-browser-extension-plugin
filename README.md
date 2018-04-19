@@ -45,6 +45,18 @@ on('before:browser:launch', loadExtension({
   validBrowser: ['chrome'],     // valid browser names to load the extension to, null for all
   destDir: '/tmp/dir/my/ext'    // where your ext will be copied, modified and loaded into Chrome, defaults to ${os.tmpdir()}/${alias}
 }))
+
+// you can pass several extension definitions,
+// but you should only have a single `on('before:browser:launch', cb)`
+const loadExtensions = require('cypress-browser-extension-plugin');
+on('before:browser:launch', function(browser = {}, args) (
+  return loadExtensions(
+    /path/to/ext1, // alias defaults to myExtension
+    // all exts but the first one need their own alias
+    { source: '/path/to/ext2', alias: 'ext2' }, 
+    { source: '/path/to/ext3', alias: 'ext3' },
+  )(browser, args);
+));
 ```
 
 A few convenience helpers are provided for storage management. For most purposes, you should only ever need to use the first two. They all return a promise:
