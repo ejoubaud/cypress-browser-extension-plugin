@@ -72,7 +72,13 @@ module.exports = (userOptions = {}) => {
 
   return function loadExtension(browser = {}, args) {
     if (!opts.validBrowsers || opts.validBrowsers.includes(browser.name)) {
-      args.push(`--load-extension=${opts.destDir}`);
+      const existingLoadArgIndex = args.findIndex(arg => (typeof arg === 'string') && arg.startsWith('--load-extension='));
+      if (existingLoadArgIndex >= 0) {
+        // eslint-disable-next-line no-param-reassign
+        args[existingLoadArgIndex] = `${args[existingLoadArgIndex]},${opts.destDir}`;
+      } else {
+        args.push(`--load-extension=${opts.destDir}`);
+      }
     }
     return args;
   };

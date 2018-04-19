@@ -1,1 +1,1 @@
-console.log('Loaded test fixture contentscript', window);
+console.log('Loaded unpacked fixture extension contentscript', window);
