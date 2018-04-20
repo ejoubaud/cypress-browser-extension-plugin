@@ -58,6 +58,7 @@ on('before:browser:launch', loadExtension({
   skipHooks: false              // don't inject files, disables commands, default false
   validBrowser: ['chrome'],     // valid browser names to load the extension to, null for all
   destDir: '/tmp/dir/my/ext'    // where your ext will be copied, modified and loaded into Chrome, defaults to ${os.tmpdir()}/${alias}
+  cypressMatches: ['*://*/*/integration/*'] // identifies Cypress frames by URL to prevent your extension loading in those, set it if your test dir is not cypress/integration/, must be an array
 }))
 ```
 
@@ -152,7 +153,6 @@ NB: Those concerns don't apply if you use the [`skipHook` option](#barebone-usag
 
 ## TODO
 
-- Add cypress matches to options
 - Add watch, to avoid breaking auto-reloading for extensions that enable it
 - Add Cypress custom commands
 - Handle `.crx`/packaged extensions

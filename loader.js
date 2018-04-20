@@ -4,12 +4,12 @@ const path = require('path');
 
 const defaultAlias = 'myExtension';
 const hookFilesDir = 'cypress-extension-hooks';
-const cypressMatches = ['*://*/*/integration/*'];
 
 const defaultOptions = {
   alias: defaultAlias,
   validBrowsers: ['chrome'],
   skipHooks: false,
+  cypressMatches: ['*://*/*/integration/*'],
   backgroundHookTemplate: fs.readFileSync(path.join(__dirname, 'templates', 'background.js'), 'utf8'),
   contentHookTemplate: fs.readFileSync(path.join(__dirname, 'templates', 'contentscript.js'), 'utf8'),
 };
@@ -49,7 +49,7 @@ function buildExtension(opts) {
   // Allow extension content scripts in all non-Cypress frames
   const cs = manifest.content_scripts;
   manifest.content_scripts = cs && cs.map(scriptObj => (
-    merge(scriptObj, { all_frames: true, exclude_matches: cypressMatches })
+    merge(scriptObj, { all_frames: true, exclude_matches: opts.cypressMatches })
   ));
 
   // Inject hooks
