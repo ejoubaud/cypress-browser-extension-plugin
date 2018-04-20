@@ -1,4 +1,4 @@
-# Test a Web extension with Cypress
+# Test a Web extension with Cypress [![CircleCI](https://circleci.com/gh/ejoubaud/cypress-browser-extension-plugin.svg?style=svg)](https://circleci.com/gh/ejoubaud/cypress-browser-extension-plugin)
 
 This Cypress plugin provides a few helpers to help you test your browser extension without messing with its code just for testing.
 
