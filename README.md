@@ -78,6 +78,8 @@ on('before:browser:launch', function(browser = {}, args) (
 A few convenience helpers are provided for storage management. For most purposes, you should only ever need to use the first two. They all return a promise:
 
 ```javascript
+const myExt = require('cypress-browser-extension-plugin/helpers')(options); // options is optional
+
 myExt.clearStorage(type);        // clear 'local' or 'sync' (type) storage
 myExt.setStorage(type, obj);     // => chrome.storage[type].set(obj) storage ('local' or 'sync')
 myExt.getStorage(type, [k1,k2]); // => chrome.storage[type].set(obj) storage ('local' or 'sync')
