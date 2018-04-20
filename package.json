@@ -4,7 +4,7 @@
   "description": "End-to-end test your browser extensions with Cypress",
   "main": "loader.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npx cypress run --browser chrome --reporter junit"
   },
   "keywords": [
     "cypress",
