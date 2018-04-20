@@ -4,7 +4,7 @@
   "description": "End-to-end test your browser extensions with Cypress",
   "main": "loader.js",
   "scripts": {
-    "test": "node_modules/cypress/bin/cypress run --browser chrome --reporter junit"
+    "test": "node_modules/cypress/bin/cypress run --reporter junit"
   },
   "keywords": [
     "cypress",
