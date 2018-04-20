@@ -83,9 +83,9 @@ A few convenience helpers are provided for storage management. For most purposes
 ```javascript
 const myExt = require('cypress-browser-extension-plugin/helpers')(options); // options is optional
 
-myExt.clearStorage(type);        // clear 'local' or 'sync' (type) storage
-myExt.setStorage(type, obj);     // => chrome.storage[type].set(obj) storage ('local' or 'sync')
-myExt.getStorage(type, [k1,k2]); // => chrome.storage[type].set(obj) storage ('local' or 'sync')
+myExt.clearStorage(type);        // clear `type` storage ('local', 'sync' or 'managed')
+myExt.setStorage(type, obj);     // => chrome.storage[type].set(obj)
+myExt.getStorage(type, [k1,k2]); // => chrome.storage[type].get([k1,k2])
 ```
 
 If you really(?) need more, the `execCommand` helper gives you access to the wider browser extension API, with a few caveats:
