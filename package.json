@@ -1,7 +1,7 @@
 {
   "name": "cypress-browser-extension-plugin",
   "version": "0.1.0",
-  "description": "Cypress plugin that lets you test a Web extension by working around some security limitations",
+  "description": "End-to-end test your browser extensions with Cypress",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
