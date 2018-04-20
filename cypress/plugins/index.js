@@ -13,6 +13,11 @@ module.exports = (on, config) => {
         source: path.join(config.fixturesFolder, 'unpacked2'),
         alias: 'unpacked2',
       },
+      {
+        source: path.join(config.fixturesFolder, 'unpacked'),
+        alias: 'hookless',
+        skipHooks: true,
+      },
     )(browser, args)
   ));
 };

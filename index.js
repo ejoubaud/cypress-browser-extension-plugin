@@ -9,13 +9,15 @@ const cypressMatches = ['*://*/*/integration/*'];
 const defaultOptions = {
   alias: defaultAlias,
   validBrowsers: ['chrome'],
+  skipHooks: false,
   backgroundHookTemplate: fs.readFileSync(path.join(__dirname, 'templates', 'background.js'), 'utf8'),
   contentHookTemplate: fs.readFileSync(path.join(__dirname, 'templates', 'contentscript.js'), 'utf8'),
 };
 
+const merge = (...objs) => Object.assign({}, ...objs);
+
 function handleOptionsDefaults(userOptions) {
-  return Object.assign(
-    {},
+  return merge(
     defaultOptions,
     {
       source: userOptions,
@@ -36,32 +38,40 @@ function buildExtension(opts) {
 
   // eslint-disable-next-line no-console
   console.log(`Cypress Extensions: Copying and preparing extension ${opts.alias} from ${opts.source} to ${opts.destDir}`);
+
   // Copy ext to tmp dir
   fs.removeSync(opts.destDir);
   fs.copySync(opts.source, opts.destDir);
   fs.mkdirSync(path.join(opts.destDir, hookFilesDir));
 
-  // Copy hook files
-  copyHookFile(opts.backgroundHookTemplate, opts.destDir, 'background.js', opts.alias);
-  copyHookFile(opts.contentHookTemplate, opts.destDir, 'contentscript.js', opts.alias);
-
   // Update manifest
   const manifest = fs.readJsonSync(path.join(opts.source, 'manifest.json'));
-  // Inject background hook
-  manifest.background = manifest.background || {};
-  manifest.background.scripts = manifest.background.scripts || [];
-  manifest.background.scripts.push(path.join(hookFilesDir, 'background.js'));
-  // Allow scripts in all frames but only non-JS
-  if (!manifest.content_scripts) manifest.content_scripts = [];
-  manifest.content_scripts = manifest.content_scripts.map(scriptObj => (
-    Object.assign({}, scriptObj, { all_frames: true, exclude_matches: cypressMatches })
+  // Allow extension content scripts in all non-Cypress frames
+  const cs = manifest.content_scripts;
+  manifest.content_scripts = cs && cs.map(scriptObj => (
+    merge(scriptObj, { all_frames: true, exclude_matches: cypressMatches })
   ));
-  // Inject content hook
-  manifest.content_scripts.push({
-    js: [path.join(hookFilesDir, 'contentscript.js')],
-    matches: ['<all_urls>'],
-    all_frames: false,
-  });
+
+  // Inject hooks
+  if (!opts.skipHooks) {
+    // Copy hook files
+    copyHookFile(opts.backgroundHookTemplate, opts.destDir, 'background.js', opts.alias);
+    copyHookFile(opts.contentHookTemplate, opts.destDir, 'contentscript.js', opts.alias);
+
+    // Inject background hook into manifest
+    manifest.background = manifest.background || {};
+    manifest.background.scripts = manifest.background.scripts || [];
+    manifest.background.scripts.push(path.join(hookFilesDir, 'background.js'));
+
+    // Inject content hook into manifest
+    if (!manifest.content_scripts) manifest.content_scripts = [];
+    manifest.content_scripts.push({
+      js: [path.join(hookFilesDir, 'contentscript.js')],
+      matches: ['<all_urls>'],
+      all_frames: false,
+    });
+  }
+
   // Write new manifest to destDir
   fs.writeJsonSync(path.join(opts.destDir, 'manifest.json'), manifest);
 }
@@ -87,7 +97,6 @@ module.exports = (...extensionDefinitions) => {
         args.push(`--load-extension=${dirList}`);
       }
     }
-    console.log(args);
     return args;
   };
 };

@@ -8,7 +8,7 @@ This Cypress plugin provides a few helpers to help you test your browser extensi
 npm install --save-dev cypress-browser-extension-plugin
 ```
 
-## Basic Usage
+## Regular Usage
 
 In your project's [plugins file](https://on.cypress.io/guides/guides/plugins.html):
 
@@ -33,6 +33,19 @@ beforeEach(function() {
 
 That's all you need to load a single extension and reset its storage on each test. Read further for more.
 
+### Barebone usage (skip hooks)
+
+Use this if you don't need Cypress to send commands to your Browser API (reset local storage, etc.):
+
+```javascript
+const loadExtension = require('cypress-browser-extension-plugin');
+
+on('before:browser:launch', loadExtension({
+  source: '/path/to/myext',
+  skipHooks: true,
+}));
+```
+
 ### Advanced usage:
 
 You can pass options to the loader:
@@ -40,14 +53,17 @@ You can pass options to the loader:
 ```javascript
 // or with more config
 on('before:browser:launch', loadExtension({
+  source: '/path/to/extension', // dir to the unpacked source extension
   alias: 'myExtension',         // identifier for use in tests if multiple extensions
-  source: '/path/to/extension', // can be crx or unpacked dir
+  skipHooks: false              // don't inject files, disables commands, default false
   validBrowser: ['chrome'],     // valid browser names to load the extension to, null for all
   destDir: '/tmp/dir/my/ext'    // where your ext will be copied, modified and loaded into Chrome, defaults to ${os.tmpdir()}/${alias}
 }))
+```
 
-// you can pass several extension definitions,
-// but you should only have a single `on('before:browser:launch', cb)`
+You can also define several extensions, in which case you'll need to give them an alias to tell which one should receive each command in the helpers:
+
+```
 const loadExtensions = require('cypress-browser-extension-plugin');
 on('before:browser:launch', function(browser = {}, args) (
   return loadExtensions(
@@ -62,7 +78,6 @@ on('before:browser:launch', function(browser = {}, args) (
 A few convenience helpers are provided for storage management. For most purposes, you should only ever need to use the first two. They all return a promise:
 
 ```javascript
-// convenience storage helpers
 myExt.clearStorage(type);        // clear 'local' or 'sync' (type) storage
 myExt.setStorage(type, obj);     // => chrome.storage[type].set(obj) storage ('local' or 'sync')
 myExt.getStorage(type, [k1,k2]); // => chrome.storage[type].set(obj) storage ('local' or 'sync')
@@ -89,7 +104,7 @@ You can customize the helpers context config:
 const myOtherExtension = require('cypress-browser-extension-plugin/helpers')({
   alias: 'myOtherExtension', // if you've loaded 2+ extensions in the loader w/ aliases, default 'myExtension'
   debug: true,               // spam the JS console with debug messages to debug issues, default false
-  timeout: 5000,             // time waiting for commands to extension backend to reply, default to 2000
+  timeout: 5000,             // ms waiting for commands to extension backend to reply, default 2000
 })
 ```
 
@@ -116,8 +131,8 @@ There are a few limitations to browser extensions that make them hard to test in
 
 This plugin works around those problems by creating a test copy of your extension into a temporary dir, into which it modifies the manifest to:
 
-1. override your content scripts `all_frames` and `matches` confs so your extension will load in the Cypress iframe for the page under test, and only there.
-2. inject a content and background script to let Cypress reach the browser extension API in the background tab by relaying messages with `window.postMessage` and `chrome.runtime.sendMessage`.
+1. override your content scripts `all_frames` and `matches` confs so your extension will load in the Cypress iframe for the page under test, and only there
+2. inject a content and background script to let Cypress reach the browser extension API in the background tab by relaying messages with `window.postMessage` and `chrome.runtime.sendMessage` (disable this with the `skipHooks` option)
 
 Then it's that modified extension that gets loaded into the browser opened by Cypress.
 
@@ -125,14 +140,18 @@ Then it's that modified extension that gets loaded into the browser opened by Cy
 
 TL;DR Only use this on tests that visit trusted webpages. Don't store sensitive data in your Browser's test profile/env. And you'll be fine.
 
-Long version: If your Cypress tests visit an untrusted page, that page can easily craft a `window.postMessage` request to exploit this plugin's hooks and gain access to your extension's backend API in the same way Cypress does. Effectively, the potential impact is the same as installing an untrusted extension on your test browser with all the same permissions your extension under test has.
+Long version: If your Cypress tests visit an untrusted page, that page can possibly craft a `window.postMessage` request to exploit this plugin's hooks and gain access to your extension's backend API in the same way Cypress does. Effectively, the potential impact is the same as installing an untrusted extension on your test browser with all the same permissions your extension under test has.
+
+(It's quite low-risk low-impact really. Why would a page bother to add specifically-crafted `postMessage`s to its JS to access the worthless test data of an unlikely Cypress-extension-testing visitor on a test browser profile? Is it a big deal if they access your test data or mess with your test browser profile? Then tiny as the risk may be, you should take it knowingly)
 
 Overall, this plugin saves you from having to add those unsafe hooks in your extension's production code, so used responsibly it should be a security net positive.
 
+NB: Those concerns don't apply if you use the [`skipHook` option](#barebone-usage-skip-hooks).
+
 ## TODO
 
+- Add cypress matches to options
 - Add watch, to avoid breaking auto-reloading for extensions that enable it
-- Add option to skip the hooks, for when you just need to load the extension in app frame, without enabling Cypress access to backend
 - Add Cypress custom commands
 - Handle `.crx`/packaged extensions
 - Cross-browser compatibility (so far built for Chrome, like Cypress, should work OOTB with FF when supported by Cypress but untested so far)
