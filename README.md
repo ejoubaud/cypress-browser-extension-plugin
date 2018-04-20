@@ -70,8 +70,8 @@ You can also define several extensions, in which case you'll need to give them a
 const loadExtensions = require('cypress-browser-extension-plugin');
 on('before:browser:launch', function(browser = {}, args) (
   return loadExtensions(
-    /path/to/ext1, // alias defaults to myExtension
-    // all exts but the first one need their own alias
+    '/path/to/ext1', // alias defaults to myExtension
+    // all exts need their own alias (at most one can have the default alias)
     { source: '/path/to/ext2', alias: 'ext2' }, 
     { source: '/path/to/ext3', alias: 'ext3' },
   )(browser, args);
