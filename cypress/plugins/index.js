@@ -1,4 +1,4 @@
-const loadExtensions = require('../../index.js');
+const loadExtensions = require('../../loader.js');
 const path = require('path');
 
 module.exports = (on, config) => {

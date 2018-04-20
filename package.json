@@ -2,7 +2,7 @@
   "name": "cypress-browser-extension-plugin",
   "version": "0.1.0",
   "description": "End-to-end test your browser extensions with Cypress",
-  "main": "index.js",
+  "main": "loader.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -13,7 +13,7 @@ describe('one extension', () => {
   });
 });
 
-describe('several extension', () => {
+describe('several extensions', () => {
   const unpacked1 = extensionHelpers({ alias: 'unpacked1', debug: true });
   const unpacked2 = extensionHelpers({ alias: 'unpacked2' });
 

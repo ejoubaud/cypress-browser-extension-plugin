@@ -13,7 +13,7 @@ npm install --save-dev cypress-browser-extension-plugin
 In your project's [plugins file](https://on.cypress.io/guides/guides/plugins.html):
 
 ```javascript
-const loadExtension = require('cypress-browser-extension-plugin');
+const loadExtension = require('cypress-browser-extension-plugin/loader');
 
 module.exports = (on) => {
   on('before:browser:launch', loadExtension('/path/to/your/extension'));
@@ -38,7 +38,7 @@ That's all you need to load a single extension and reset its storage on each tes
 Use this if you don't need Cypress to send commands to your Browser API (reset local storage, etc.):
 
 ```javascript
-const loadExtension = require('cypress-browser-extension-plugin');
+const loadExtension = require('cypress-browser-extension-plugin/loader');
 
 on('before:browser:launch', loadExtension({
   source: '/path/to/myext',
