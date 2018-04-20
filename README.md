@@ -63,7 +63,7 @@ on('before:browser:launch', loadExtension({
 
 You can also define several extensions, in which case you'll need to give them an alias to tell which one should receive each command in the helpers:
 
-```
+```javascript
 const loadExtensions = require('cypress-browser-extension-plugin');
 on('before:browser:launch', function(browser = {}, args) (
   return loadExtensions(
