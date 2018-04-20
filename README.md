@@ -56,6 +56,7 @@ on('before:browser:launch', loadExtension({
   source: '/path/to/extension', // dir to the unpacked source extension
   alias: 'myExtension',         // identifier for use in tests if multiple extensions
   skipHooks: false              // don't inject files, disables commands, default false
+  watch: true,                  // rebuilds the temp dir extension on source files changes, useful on exts implementing live reload, default true
   validBrowser: ['chrome'],     // valid browser names to load the extension to, null for all
   destDir: '/tmp/dir/my/ext'    // where your ext will be copied, modified and loaded into Chrome, defaults to ${os.tmpdir()}/${alias}
   cypressMatches: ['*://*/*/integration/*'] // identifies Cypress frames by URL to prevent your extension loading in those, set it if your test dir is not cypress/integration/, must be an array
@@ -153,7 +154,6 @@ NB: Those concerns don't apply if you use the [`skipHook` option](#barebone-usag
 
 ## TODO
 
-- Add watch, to avoid breaking auto-reloading for extensions that enable it
 - Add Cypress custom commands
 - Handle `.crx`/packaged extensions
 - Cross-browser compatibility (so far built for Chrome, like Cypress, should work OOTB with FF when supported by Cypress but untested so far)

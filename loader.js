@@ -1,6 +1,7 @@
 const fs = require('fs-extra');
 const os = require('os');
 const path = require('path');
+const chokidar = require('chokidar');
 
 const defaultAlias = 'myExtension';
 const hookFilesDir = 'cypress-extension-hooks';
@@ -10,9 +11,12 @@ const defaultOptions = {
   validBrowsers: ['chrome'],
   skipHooks: false,
   cypressMatches: ['*://*/*/integration/*'],
+  watch: true,
   backgroundHookTemplate: fs.readFileSync(path.join(__dirname, 'templates', 'background.js'), 'utf8'),
   contentHookTemplate: fs.readFileSync(path.join(__dirname, 'templates', 'contentscript.js'), 'utf8'),
 };
+
+let watchers = [];
 
 const merge = (...objs) => Object.assign({}, ...objs);
 
@@ -76,10 +80,30 @@ function buildExtension(opts) {
   fs.writeJsonSync(path.join(opts.destDir, 'manifest.json'), manifest);
 }
 
+// prevents duplicate watchers list growing whenever Cypress relaunches a new browser
+function resetWatchers() {
+  if (watchers.length > 0) console.log('Cypress Extensions: Closing existing extension watchers');
+  watchers.forEach(w => w.close());
+  watchers = [];
+}
+
+function watch(opts) {
+  const watcher = chokidar.watch(opts.source, { ignoreInitial: true });
+  watcher.on('all', (event, changePath) => {
+    console.log('Cypress Extensions: Watch event ', event, ` on ${opts.alias}:`, changePath);
+    buildExtension(opts);
+  });
+  watchers.push(watcher);
+}
+
 module.exports = (...extensionDefinitions) => {
   const definitions = extensionDefinitions.map(handleOptionsDefaults);
 
-  definitions.forEach(buildExtension);
+  resetWatchers();
+  definitions.forEach((extensionOptions) => {
+    buildExtension(extensionOptions);
+    if (extensionOptions.watch) watch(extensionOptions);
+  });
 
   return function loadExtensions(browser = {}, args) {
     const toLoad = definitions.filter(opts => (
