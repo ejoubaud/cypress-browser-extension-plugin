@@ -48,16 +48,17 @@ on('before:browser:launch', loadExtension({
 
 ### Advanced usage:
 
-You can pass options to the loader:
+You can pass options to the loader (here with their default value, unless required or stated otherwise):
 
 ```javascript
 // or with more config
 on('before:browser:launch', loadExtension({
-  source: '/path/to/extension', // dir to the unpacked source extension
+  source: '/path/to/extension', // dir to the unpacked source extension, required
   alias: 'myExtension',         // identifier for use in tests if multiple extensions
-  skipHooks: false              // don't inject files, disables commands, default false
-  watch: true,                  // rebuilds the temp dir extension on source files changes, useful on exts implementing live reload, default true
+  skipHooks: false              // don't inject content/background hook scripts, more secure and less intrusive but you can't use helpers/commands, set it to true if you don't need them
+  watch: true,                  // rebuilds the temp dir extension on source files changes, useful on exts implementing live reload
   validBrowser: ['chrome'],     // valid browser names to load the extension to, null for all
+  quiet: false,                 // disables loader console logs when set to true
   destDir: '/tmp/dir/my/ext'    // where your ext will be copied, modified and loaded into Chrome, defaults to ${os.tmpdir()}/${alias}
   cypressMatches: ['*://*/*/integration/*'] // identifies Cypress frames by URL to prevent your extension loading in those, set it if your test dir is not cypress/integration/, must be an array
 }))

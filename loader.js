@@ -12,6 +12,7 @@ const defaultOptions = {
   skipHooks: false,
   cypressMatches: ['*://*/*/integration/*'],
   watch: true,
+  quiet: false,
   backgroundHookTemplate: fs.readFileSync(path.join(__dirname, 'templates', 'background.js'), 'utf8'),
   contentHookTemplate: fs.readFileSync(path.join(__dirname, 'templates', 'contentscript.js'), 'utf8'),
 };
@@ -40,8 +41,7 @@ function copyHookFile(templateContent, destDir, fileName, alias) {
 function buildExtension(opts) {
   if (!fs.existsSync(opts.source)) throw new Error(`No file found at extension source ${opts.source}`);
 
-  // eslint-disable-next-line no-console
-  console.log(`Cypress Extensions: Copying and preparing extension ${opts.alias} from ${opts.source} to ${opts.destDir}`);
+  if (!opts.quiet) console.log(`Cypress Extensions: Copying and preparing extension ${opts.alias} from ${opts.source} to ${opts.destDir}`);
 
   // Copy ext to tmp dir
   fs.removeSync(opts.destDir);
@@ -82,7 +82,6 @@ function buildExtension(opts) {
 
 // prevents duplicate watchers list growing whenever Cypress relaunches a new browser
 function resetWatchers() {
-  if (watchers.length > 0) console.log('Cypress Extensions: Closing existing extension watchers');
   watchers.forEach(w => w.close());
   watchers = [];
 }
@@ -90,7 +89,7 @@ function resetWatchers() {
 function watch(opts) {
   const watcher = chokidar.watch(opts.source, { ignoreInitial: true });
   watcher.on('all', (event, changePath) => {
-    console.log('Cypress Extensions: Watch event ', event, ` on ${opts.alias}:`, changePath);
+    if (!opts.quiet) console.log('Cypress Extensions: Watch event ', event, ` on ${opts.alias}:`, changePath);
     buildExtension(opts);
   });
   watchers.push(watcher);
