@@ -26,7 +26,7 @@ Then in your spec/support files:
 const createHelpers = require('cypress-browser-extension-plugin/helpers');
 const myExtension = createHelpers();
 
-beforeEach(function() {
+beforeEach(() => {
   cy.wrap(myExtension.clearStorage('local')); // Sync version, Cypress waits on your command
 });
 ```
@@ -68,14 +68,14 @@ You can also define several extensions, in which case you'll need to give them a
 
 ```javascript
 const loadExtensions = require('cypress-browser-extension-plugin');
-on('before:browser:launch', function(browser = {}, args) (
+on('before:browser:launch', (browser = {}, args) => {
   return loadExtensions(
     '/path/to/ext1', // alias defaults to myExtension
     // all exts need their own alias (at most one can have the default alias)
     { source: '/path/to/ext2', alias: 'ext2' }, 
     { source: '/path/to/ext3', alias: 'ext3' },
   )(browser, args);
-));
+});
 ```
 
 A few convenience helpers are provided for storage management. For most purposes, you should only ever need to use the first two. They all return a promise:
