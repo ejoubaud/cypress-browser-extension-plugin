@@ -13,8 +13,8 @@ const defaultOptions = {
   cypressMatches: ['*://*/*/integration/*'],
   watch: true,
   quiet: false,
-  backgroundHookTemplate: fs.readFileSync(path.join(__dirname, 'templates', 'background.js'), 'utf8'),
-  contentHookTemplate: fs.readFileSync(path.join(__dirname, 'templates', 'contentscript.js'), 'utf8'),
+  backgroundHookTemplate: path.join(__dirname, 'templates', 'background.js'),
+  contentHookTemplate: path.join(__dirname, 'templates', 'contentscript.js'),
 };
 
 let watchers = [];
@@ -32,7 +32,8 @@ function handleOptionsDefaults(userOptions) {
   );
 }
 
-function copyHookFile(templateContent, destDir, fileName, alias) {
+function copyHookFile(templateFile, destDir, fileName, alias) {
+  const templateContent = fs.readFileSync(templateFile, 'utf8');
   const content = templateContent.replace(new RegExp('{{alias}}', 'g'), alias);
   const destFile = path.resolve(destDir, hookFilesDir, fileName);
   fs.writeFileSync(destFile, content);
