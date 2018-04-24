@@ -13,21 +13,20 @@ npm install --save-dev cypress-browser-extension-plugin
 In your project's [plugins file](https://on.cypress.io/guides/guides/plugins.html):
 
 ```javascript
+// cypress/plugins/index.js
 const loadExtension = require('cypress-browser-extension-plugin/loader');
 
 module.exports = (on) => {
   on('before:browser:launch', loadExtension('/path/to/your/extension'));
 }
-```
 
-Then in your spec/support files:
+// cypress/support/command.js
+const addExtensionCommands = require('cypress-browser-extension-plugin/commands');
+addExtensionCommands(Cypress);
 
-```javascript
-const createHelpers = require('cypress-browser-extension-plugin/helpers');
-const myExtension = createHelpers();
-
+// cypress/integration/my_spec.js or cypress/support/index.js
 beforeEach(() => {
-  cy.wrap(myExtension.clearStorage('local')); // Sync version, Cypress waits on your command
+  cy.clearExtensionStorage('local');
 });
 ```
 
@@ -35,7 +34,7 @@ That's all you need to load a single extension and reset its storage on each tes
 
 ### Barebone usage (skip hooks)
 
-Use this if you don't need Cypress to send commands to your Browser API (reset local storage, etc.):
+Use this if you don't need Cypress to send commands to your Browser API (e.g. no local storage to reset):
 
 ```javascript
 const loadExtension = require('cypress-browser-extension-plugin/loader');
@@ -78,59 +77,81 @@ on('before:browser:launch', (browser = {}, args) => {
 });
 ```
 
-A few convenience helpers are provided for storage management. For most purposes, you should only ever need to use the first two. They all return a promise:
+A few convenience commands are provided for storage management:
+
+```javascript
+const addExtensionCommands = require('cypress-browser-extension-plugin/commands');
+addExtensionCommands(Cypress) // options is optional, more below
+
+// in spec/beforeEach hooks
+cy.clearStorage(type);        // clear `type` storage ('local', 'sync' or 'managed')
+cy.setStorage(type, obj);     // => chrome.storage[type].set(obj)
+cy.getStorage(type, [k1,k2]); // => chrome.storage[type].get([k1,k2])
+  .should('deep.eq', obj)     // Cypress chaining works
+```
+
+If you really(?) need more, the `execExtensionCommand` command gives you access to the wider browser extension API (`chrome` object properties and their methods) from Cypress, with a few caveats:
+
+1. you can only pass JSONifiable args, no function (because they'll go through `window.postMessage` and `runtime.sendMessage`), so event listeners are not supported
+2. your args must be passed as a `[arg1, arg2, ...]` array, single args as `[arg]` (don't forget the wrapping array)
+
+```javascript
+// generic command: `cy.execExtensionCommand(property, method, args, options)`
+cy.execExtensionCommand('runtime', 'sendMessage', [msg]) // => `chrome.runtime.sendMessage(message)`
+  .execExtensionCommand('storage.local', 'set', [obj]);  // properties can be chained with a dotted name
+  .execExtensionCommand('tabs.TAB_ID_NONE').then((idNone) => /*.*/);  // accessing a property, we don't pass a method or args arg => `chrome.tabs.TAB_ID_NONE`
+  // if `method` is not set (accessing property), the plugin assumes returnType is 'sync'
+```
+
+Each command can be passed custom options:
+
+```javascript
+cy.execExtensionCommand('runtime', 'postMessage', [msg], {
+  alias: 'myOtherExtension',  // send command to a specific extension loaded with a custom alias, useful when testing 2+ extensions
+  debug: true,                // spam the JS console with debug messages to debug issues, default false
+  timeout: 5000,              // ms waiting for commands to extension backend to reply, default 2000
+  returnType: 'sync'          // tell the backend to expect a sync response from the method, rather than pass it a callback (default 'callback')
+}).then(/*.*/);
+```
+
+You can set default options for all subsequent commands with a context config:
+
+```javascript
+require('cypress-browser-extension-plugin/commands')(Cypress)({
+  alias: 'myOtherExtension', // send commands to specific extension loaded with custom alias
+  debug: true,               // log extension command stuff to console by default
+  timeout: 5000,             // change default timeout for extension commands
+})
+```
+
+If you don't want to pollute your Cypress namespace or log with commands, you can get a simple helper object, which works the same as the commands without the Cypress command/log sugar. All the helpers just return a promise:
 
 ```javascript
 const myExt = require('cypress-browser-extension-plugin/helpers')(options); // options is optional
 
-myExt.clearStorage(type);        // clear `type` storage ('local', 'sync' or 'managed')
-myExt.setStorage(type, obj);     // => chrome.storage[type].set(obj)
-myExt.getStorage(type, [k1,k2]); // => chrome.storage[type].get([k1,k2])
-```
+myExt.clearStorage(type)        // clear `type` storage ('local', 'sync' or 'managed')
+myExt.setStorage(type, obj)     // => chrome.storage[type].set(obj)
+myExt.getStorage(type, [k1,k2]) // => chrome.storage[type].get([k1,k2])
 
-If you really(?) need more, the `execCommand` helper gives you access to the wider browser extension API, with a few caveats:
+// All calls return a promise, regardless of whether the actual
+// backend method called has a sync, callback or promise return type
+myExt.execCommand('runtime', 'sendMessage', [msg]) // => chrome.runtime.sendMessage(msg)
+myExt.execCommand('tabs.TAB_ID_NONE')               // => chrome.runtime.sendMessage(msg)
+myExt.execCommand('pageAction', 'show', [], { returnType: 'sync' })  // => chrome.runtime.sendMessage(msg)
+  .then((response) => doSomething(response));
 
-1. you can only pass JSONifiable args, no function (because they'll go through `window.postMessage` and `runtime.sendMessage`), so event listeners are not supported
-2. your args must be passed as a `[arg1, arg2, ...]` array, single args as `[arg]` (don't forget the wrapping array)
-3. it always returns a promise, that will resolve to the result of the method/property called, assuming it's JSONifiable
-4. if you're calling a synchronous API method, you need to let the plugin know with the `{returnType: 'sync'}` option (by default, the plugin assumes the methods you're calling on the browser API are async and callback-based ; it passes them  callback, from which it generates a promise ; that can cause errors or the response to get lost if the method actually expects sync arguments and no callback)
-
-```javascript
-// generic helper: `.execCommand(property, method, args, options)`
-myExt.execCommand('runtime', 'sendMessage', [msg]) // => `chrome.runtime.sendMessage(message)`
-  .then((response) => doSomething(response));      // always returns a promise (JSONifiable response only), whether sync or async
-myExt.execCommand('storage.local', 'set', [obj]);  // properties can be chained with a dotted name
-myExt.execCommand('tabs.TAB_ID_NONE').then((idNone) => /*.*/);  // accessing a property, we don't pass a method or args arg => `chrome.tabs.TAB_ID_NONE`
-```
-
-You can customize the helpers context config:
-
-```javascript
-const myOtherExtension = require('cypress-browser-extension-plugin/helpers')({
-  alias: 'myOtherExtension', // if you've loaded 2+ extensions in the loader w/ aliases, default 'myExtension'
-  debug: true,               // spam the JS console with debug messages to debug issues, default false
-  timeout: 5000,             // ms waiting for commands to extension backend to reply, default 2000
-})
-```
-
-Context options can be overriden per command:
-
-```javascript
-myExt.execCommand('runtime', 'postMessage', [msg], {
-  alias: 'myOtherExtension',  // send command to another extension
-  debug: true,                // log stuff to console
-  timeout: 5000,              // change timeout
-  returnType: 'sync'          // tell the backend to expect a sync response from the method, rather than pass it a callback (default 'callback')
-}).then(/*.*/);
+// you can keep 2 helper objects around to control 2 different extensions
+const myOtherExt = require('cypress-browser-extension-plugin/helpers')({ alias: 'myOtherExt' });
+Promise.all([myExt, myOtherExt].map(e => e.clearStorage(type)); // is equivalent to:
+Promise.all(['myExt', 'myOtherExt'].map(a => myExt.clearStorage(type, { alias: a }))
 ```
 
 ## Why?
 
 There are a few limitations to browser extensions that make them hard to test in Cypress:
 
-1. You can't (readily) access the extension's local storage to reset it (or apply fixtures) between tests. Or the browser extension API in general.
+1. You can't (readily) access the extension's local storage to reset it (or apply fixtures) between tests. Or the browser extension API in general. (This is not specific to Cypress, same problem with Selenium)
 2. Cypress has 3 frames, only one of which is for the app under test. To test a content script, you want it to run only in that frame.
-3. The workarounds for the above imply to modify your extension's code just for testing, in a way that can leave it vulnerable to attacks (`window.postMessages(m, "*")`).
 
 ## How?
 
@@ -143,7 +164,7 @@ Then it's that modified extension that gets loaded into the browser opened by Cy
 
 ## Security
 
-TL;DR Only use this on tests that visit trusted webpages. Don't store sensitive data in your Browser's test profile/env. And you'll be fine.
+**TL;DR Only use this on tests that visit trusted webpages. Don't store sensitive data in your Browser's test profile/env. And you'll be fine.**
 
 Long version: If your Cypress tests visit an untrusted page, that page can possibly craft a `window.postMessage` request to exploit this plugin's hooks and gain access to your extension's backend API in the same way Cypress does. Effectively, the potential impact is the same as installing an untrusted extension on your test browser with all the same permissions your extension under test has.
 
@@ -153,9 +174,20 @@ Overall, this plugin saves you from having to add those unsafe hooks in your ext
 
 NB: Those concerns don't apply if you use the [`skipHook` option](#barebone-usage-skip-hooks).
 
+## Implementation notes: method callbacks, sync properties and command promises
+
+Note: The plugin's default behaviour should work in 99% of the cases, only read on if you're interested in implementation details or are running into a specific problem with return values using `execExtensionCommand`/`execCommand`.
+
+This plugin needs to juggle the 3 methods JS has for returning values: synchronous, callback and promise. In the Chrome extensions API, method calls (`chrome.some.property.method(arg1, ..., callback)`) are async, accepting a callback as their last argument to pass their return value, while properties are accessed synchronously (`chrome.some.property`). Cypress, in contrast, uses and expects promises everywhere. So the plugin needs to turn the callbacks/sync returns of the browser API into promises for Cypress.
+
+So it assumes Chrome's convention is respected everywere and, by default it passes a callback to all method calls that it relays to the `chrome` object (i.e. when you've called `execCommand(property, method[, args])`) and "promisifies" that callback to generate the promise it returns to Cypress. On mere property access (i.e. when you're not passing a `method`: `execCommand(property)`), it assumes access to a synchronous value and resolves its return promise to that value.
+
+But should you ever find yourself calling a method that, for some reason, doesn't follow the convention and makes a synchronous return instead of accepting a callback (the only example I could find was [`pageAction.show()/hide()`](https://developer.chrome.com/extensions/pageAction#method-show)), you'll need to pass the `{ returnType: 'sync' }` option to let the plugin know how to handle it (`execCommand(property, method, args, { returnType: 'sync' }`). Otherwise, the plugin will try to pass a callback, which is likely to result in an error and the result getting lost.
+
+(This is the same kind of problem Mozilla's [`webextension-polyfill`](https://github.com/mozilla/webextension-polyfill) run into  when they need to turn Chrome's callback-based returns into promises as per the emerging WebExtension standard based off Chrome's API, though they solve it in a [slightly more involved way](https://github.com/mozilla/webextension-polyfill/blob/596f47bcc8715aa5301612cffce0c60540c02bff/src/browser-polyfill.js#L135-L143) I didn't feel was worth replicating here.)
+
 ## TODO
 
-- Add Cypress custom commands
 - Handle `.crx`/packaged extensions
 - Cross-browser compatibility (so far built for Chrome, like Cypress, should work OOTB with FF when supported by Cypress but untested so far)
 - Use browserify/webpack for templates so we can require stuff while still replacing `{{alias}}` placeholders and DRY-up functions/constants

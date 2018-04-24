@@ -58,6 +58,9 @@ function sendBrowserCommand({ alias, timeout, debug, returnType }, property, met
   return promise;
 }
 
+function assertPresent(type) { if (typeof type !== 'string') throw new Error('Need to specify extension storage type (local, sync or managed)'); }
+function assertArray(args) { if (typeof args !== 'undefined' && !Array.isArray(args)) throw new Error('execCommand arg should be passed as an array of args, even on single value'); }
+
 const defaultContext = {
   alias: 'myExtension',
   debug: false,
@@ -69,15 +72,19 @@ module.exports = function createHelpers(userContext = {}) {
   const ctx = merge(defaultContext, userContext);
   return {
     clearStorage(type, opts = {}) { // type is basically sync or local
+      assertPresent(type);
       return sendBrowserCommand(merge(ctx, opts), `storage.${type}`, 'clear');
     },
     setStorage(type, obj, opts = {}) {
+      assertPresent(type);
       return sendBrowserCommand(merge(ctx, opts), `storage.${type}`, 'set', [obj]);
     },
     getStorage(type, keys, opts = {}) {
+      assertPresent(type);
       return sendBrowserCommand(merge(ctx, opts), `storage.${type}`, 'get', [keys]);
     },
     execCommand(property, method, args, opts = {}) {
+      assertArray(args);
       return sendBrowserCommand(merge(ctx, opts), property, method, args);
     },
   };
