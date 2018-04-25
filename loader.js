@@ -36,21 +36,21 @@ function copyHookFile(templateFile, destDir, fileName, alias) {
   const templateContent = fs.readFileSync(templateFile, 'utf8');
   const content = templateContent.replace(new RegExp('{{alias}}', 'g'), alias);
   const destFile = path.resolve(destDir, hookFilesDir, fileName);
-  fs.writeFileSync(destFile, content);
+  return fs.writeFile(destFile, content);
 }
 
-function buildExtension(opts) {
+async function buildExtension(opts) {
   if (!fs.existsSync(opts.source)) throw new Error(`No file found at extension source ${opts.source}`);
 
   if (!opts.quiet) console.log(`Cypress Extensions: Copying and preparing extension ${opts.alias} from ${opts.source} to ${opts.destDir}`);
 
   // Copy ext to tmp dir
-  fs.removeSync(opts.destDir);
-  fs.copySync(opts.source, opts.destDir);
-  fs.mkdirSync(path.join(opts.destDir, hookFilesDir));
+  await fs.remove(opts.destDir);
+  await fs.copy(opts.source, opts.destDir);
+  await fs.mkdir(path.join(opts.destDir, hookFilesDir));
 
   // Update manifest
-  const manifest = fs.readJsonSync(path.join(opts.source, 'manifest.json'));
+  const manifest = await fs.readJson(path.join(opts.source, 'manifest.json'));
   // Allow extension content scripts in all non-Cypress frames
   const cs = manifest.content_scripts;
   manifest.content_scripts = cs && cs.map(scriptObj => (
@@ -60,8 +60,8 @@ function buildExtension(opts) {
   // Inject hooks
   if (!opts.skipHooks) {
     // Copy hook files
-    copyHookFile(opts.backgroundHookTemplate, opts.destDir, 'background.js', opts.alias);
-    copyHookFile(opts.contentHookTemplate, opts.destDir, 'contentscript.js', opts.alias);
+    await copyHookFile(opts.backgroundHookTemplate, opts.destDir, 'background.js', opts.alias);
+    await copyHookFile(opts.contentHookTemplate, opts.destDir, 'contentscript.js', opts.alias);
 
     // Inject background hook into manifest
     manifest.background = manifest.background || {};
@@ -78,7 +78,7 @@ function buildExtension(opts) {
   }
 
   // Write new manifest to destDir
-  fs.writeJsonSync(path.join(opts.destDir, 'manifest.json'), manifest);
+  await fs.writeJson(path.join(opts.destDir, 'manifest.json'), manifest);
 }
 
 // prevents duplicate watchers list growing whenever Cypress relaunches a new browser
@@ -88,6 +88,7 @@ function resetWatchers() {
 }
 
 function watch(opts) {
+  if (!opts.watch) return;
   const watcher = chokidar.watch(opts.source, { ignoreInitial: true });
   watcher.on('all', (event, changePath) => {
     if (!opts.quiet) console.log('Cypress Extensions: Watch event ', event, ` on ${opts.alias}:`, changePath);
@@ -96,31 +97,41 @@ function watch(opts) {
   watchers.push(watcher);
 }
 
+function watchAll(definitions, whenPromise) {
+  whenPromise.then(() => definitions.forEach(watch));
+}
+
 module.exports = (...extensionDefinitions) => {
   const definitions = extensionDefinitions.map(handleOptionsDefaults);
 
   resetWatchers();
-  definitions.forEach((extensionOptions) => {
-    buildExtension(extensionOptions);
-    if (extensionOptions.watch) watch(extensionOptions);
-  });
 
+  const whenAllBuilt = Promise.all(
+    definitions.map(buildExtension),
+  );
+
+  watchAll(definitions, whenAllBuilt);
+
+  // async plugin function, will resolve loading args for browser when
+  // all the temp extensions are built
   return function loadExtensions(browser = {}, args) {
-    const toLoad = definitions.filter(opts => (
-      !opts.validBrowsers || opts.validBrowsers.includes(browser.name)
-    ));
-    if (toLoad.length > 0) {
-      const dirList = toLoad.map(o => o.destDir).join(',');
-      const existingLoadArgIndex = args.findIndex(arg => (
-        (typeof arg === 'string') && arg.startsWith('--load-extension=')
+    return whenAllBuilt.then(() => {
+      const toLoad = definitions.filter(opts => (
+        !opts.validBrowsers || opts.validBrowsers.includes(browser.name)
       ));
-      if (existingLoadArgIndex >= 0) {
-        // eslint-disable-next-line no-param-reassign
-        args[existingLoadArgIndex] = `${args[existingLoadArgIndex]},${dirList}`;
-      } else {
-        args.push(`--load-extension=${dirList}`);
+      if (toLoad.length > 0) {
+        const dirList = toLoad.map(o => o.destDir).join(',');
+        const existingLoadArgIndex = args.findIndex(arg => (
+          (typeof arg === 'string') && arg.startsWith('--load-extension=')
+        ));
+        if (existingLoadArgIndex >= 0) {
+          // eslint-disable-next-line no-param-reassign
+          args[existingLoadArgIndex] = `${args[existingLoadArgIndex]},${dirList}`;
+        } else {
+          args.push(`--load-extension=${dirList}`);
+        }
       }
-    }
-    return args;
+      return args;
+    });
   };
 };
