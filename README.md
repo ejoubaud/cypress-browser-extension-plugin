@@ -14,10 +14,10 @@ In your project's [plugins file](https://on.cypress.io/guides/guides/plugins.htm
 
 ```javascript
 // cypress/plugins/index.js
-const loadExtension = require('cypress-browser-extension-plugin/loader');
+const extensionLoader = require('cypress-browser-extension-plugin/loader');
 
 module.exports = (on) => {
-  on('before:browser:launch', loadExtension('/path/to/your/extension'));
+  on('before:browser:launch', extensionLoader.load('/path/to/your/extension'));
 }
 
 // cypress/support/command.js
@@ -37,7 +37,7 @@ That's all you need to load a single extension and reset its storage on each tes
 Use this if you don't need Cypress to send commands to your Browser API (e.g. no local storage to reset):
 
 ```javascript
-const loadExtension = require('cypress-browser-extension-plugin/loader');
+const loadExtension = require('cypress-browser-extension-plugin/loader').load;
 
 on('before:browser:launch', loadExtension({
   source: '/path/to/myext',
@@ -51,7 +51,7 @@ You can pass options to the loader (here with their default value, unless requir
 
 ```javascript
 // or with more config
-on('before:browser:launch', loadExtension({
+on('before:browser:launch', extensionLoader.load({
   source: '/path/to/extension', // dir to the unpacked source extension, required
   alias: 'myExtension',         // identifier for use in tests if multiple extensions
   skipHooks: false              // don't inject content/background hook scripts, more secure and less intrusive but you can't use helpers/commands, set it to true if you don't need them
@@ -66,9 +66,8 @@ on('before:browser:launch', loadExtension({
 You can also define several extensions, in which case you'll need to give them an alias to tell which one should receive each command in the helpers:
 
 ```javascript
-const loadExtensions = require('cypress-browser-extension-plugin');
 on('before:browser:launch', (browser = {}, args) => {
-  return loadExtensions(
+  return extensionLoader.load(
     '/path/to/ext1', // alias defaults to myExtension
     // all exts need their own alias (at most one can have the default alias)
     { source: '/path/to/ext2', alias: 'ext2' }, 

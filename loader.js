@@ -17,11 +17,15 @@ const defaultOptions = {
   contentHookTemplate: path.join(__dirname, 'templates', 'contentscript.js'),
 };
 
+let definitions = [];
+let buildPromises = [];
 let watchers = [];
 
 const merge = (...objs) => Object.assign({}, ...objs);
 
-function handleOptionsDefaults(userOptions) {
+// Adds default options to user-provided options to build a definitive
+// extension definition object
+function createExtensionDefinition(userOptions) {
   return merge(
     defaultOptions,
     {
@@ -39,7 +43,8 @@ function copyHookFile(templateFile, destDir, fileName, alias) {
   return fs.writeFile(destFile, content);
 }
 
-async function buildExtension(opts) {
+async function buildFiles(opts) {
+  console.log('buildFile', opts);
   if (!fs.existsSync(opts.source)) throw new Error(`No file found at extension source ${opts.source}`);
 
   if (!opts.quiet) console.log(`Cypress Extensions: Copying and preparing extension ${opts.alias} from ${opts.source} to ${opts.destDir}`);
@@ -79,6 +84,8 @@ async function buildExtension(opts) {
 
   // Write new manifest to destDir
   await fs.writeJson(path.join(opts.destDir, 'manifest.json'), manifest);
+
+  return opts; // for promise chaining
 }
 
 // prevents duplicate watchers list growing whenever Cypress relaunches a new browser
@@ -88,50 +95,73 @@ function resetWatchers() {
 }
 
 function watch(opts) {
-  if (!opts.watch) return;
+  if (!opts.watch) return opts;
   const watcher = chokidar.watch(opts.source, { ignoreInitial: true });
   watcher.on('all', (event, changePath) => {
     if (!opts.quiet) console.log('Cypress Extensions: Watch event ', event, ` on ${opts.alias}:`, changePath);
-    buildExtension(opts);
+    buildFiles(opts);
   });
   watchers.push(watcher);
+  return opts;
 }
 
-function watchAll(definitions, whenPromise) {
-  whenPromise.then(() => definitions.forEach(watch));
+function storeDefinition(options) {
+  definitions.push(options);
+  return options;
 }
 
-module.exports = (...extensionDefinitions) => {
-  const definitions = extensionDefinitions.map(handleOptionsDefaults);
-
+function reset() {
   resetWatchers();
+  buildPromises = [];
+  definitions = [];
+}
 
-  const whenAllBuilt = Promise.all(
-    definitions.map(buildExtension),
-  );
+function buildExtension(userOptions) {
+  const buildPromise = Promise.resolve(userOptions)
+    .then(createExtensionDefinition)
+    .then((e) => { console.log('SPY', e); return e; })
+    .then(storeDefinition)
+    .then(buildFiles)
+    .then(watch);
+  buildPromises.push(buildPromise);
+  return buildPromise;
+}
 
-  watchAll(definitions, whenAllBuilt);
+function buildExtensions(...optionsList) {
+  optionsList.forEach(buildExtension);
+}
 
-  // async plugin function, will resolve loading args for browser when
-  // all the temp extensions are built
-  return function loadExtensions(browser = {}, args) {
-    return whenAllBuilt.then(() => {
-      const toLoad = definitions.filter(opts => (
-        !opts.validBrowsers || opts.validBrowsers.includes(browser.name)
+const whenAllBuilt = () => Promise.all(buildPromises);
+
+// for use in the on('before:browser:launch') Cypress hook
+// returns a promise resolving to the browser args once all the tempextensions are built
+function onBeforeBrowserLaunch(browser = {}, args) {
+  return whenAllBuilt().then(() => {
+    const toLoad = definitions.filter(opts => (
+      !opts.validBrowsers || opts.validBrowsers.includes(browser.name)
+    ));
+    if (toLoad.length > 0) {
+      const dirList = toLoad.map(o => o.destDir).join(',');
+      const existingLoadArgIndex = args.findIndex(arg => (
+        (typeof arg === 'string') && arg.startsWith('--load-extension=')
       ));
-      if (toLoad.length > 0) {
-        const dirList = toLoad.map(o => o.destDir).join(',');
-        const existingLoadArgIndex = args.findIndex(arg => (
-          (typeof arg === 'string') && arg.startsWith('--load-extension=')
-        ));
-        if (existingLoadArgIndex >= 0) {
-          // eslint-disable-next-line no-param-reassign
-          args[existingLoadArgIndex] = `${args[existingLoadArgIndex]},${dirList}`;
-        } else {
-          args.push(`--load-extension=${dirList}`);
-        }
+      if (existingLoadArgIndex >= 0) {
+        // eslint-disable-next-line no-param-reassign
+        args[existingLoadArgIndex] = `${args[existingLoadArgIndex]},${dirList}`;
+      } else {
+        args.push(`--load-extension=${dirList}`);
       }
-      return args;
-    });
-  };
-};
+    }
+    return args;
+  });
+}
+
+// short-hand function for one-line use in on('before:browser:launch') Cypress hook
+// registers and builds a list of extensions, then returns the browserArgs function
+function load(...optionsList) {
+  reset();
+  buildExtensions(...optionsList);
+  return onBeforeBrowserLaunch;
+}
+
+module.exports = { load, reset, buildExtensions, buildExtension, onBeforeBrowserLaunch };

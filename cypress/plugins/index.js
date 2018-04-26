@@ -1,9 +1,9 @@
-const loadExtensions = require('../../loader.js');
+const extensionLoader = require('../../loader.js');
 const path = require('path');
 
 module.exports = (on, config) => {
   on('before:browser:launch', (browser = {}, args) => (
-    loadExtensions(
+    extensionLoader.load(
       path.join(config.fixturesFolder, 'unpacked'),
       {
         source: path.join(config.fixturesFolder, 'unpacked'),
