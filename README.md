@@ -52,7 +52,7 @@ You can pass options to the loader (here with their default value, unless requir
 ```javascript
 // or with more config
 on('before:browser:launch', extensionLoader.load({
-  source: '/path/to/extension', // dir to the unpacked source extension, required
+  source: '/path/to/extension', // path to the dir (unpacked) or crx extension, required
   alias: 'myExtension',         // identifier for use in tests if multiple extensions
   skipHooks: false              // don't inject content/background hook scripts, more secure and less intrusive but you can't use helpers/commands, set it to true if you don't need them
   watch: true,                  // rebuilds the temp dir extension on source files changes, useful on exts implementing live reload
