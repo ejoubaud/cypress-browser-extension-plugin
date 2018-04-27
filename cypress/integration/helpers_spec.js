@@ -22,7 +22,7 @@ describe('several extensions', () => {
       .wrap(unpacked2.clearStorage('local'));
   });
 
-  it('can interact with 2 different extensions using aliases', () => {
+  it('can interact with several different extensions using aliases', () => {
     cy.wrap(unpacked1.setStorage('local', { myKey: 1 }))
       .wrap(unpacked2.setStorage('local', { myKey: 2 }))
       .wrap(unpacked1.getStorage('local', 'myKey'))
@@ -35,6 +35,16 @@ describe('several extensions', () => {
       .wrap(unpacked1.getStorage('local', 'myKey', { alias: 'unpacked2' }))
       .should('deep.eq', { myKey: 3 })
       .wrap(unpacked2.getStorage('local', 'myKey', { alias: 'unpacked1' }))
+      .should('deep.eq', { myKey: 1 });
+  });
+});
+
+describe('crx', () => {
+  const crxpacked = extensionHelpers({ alias: 'crxpacked' });
+
+  it('works on and unpacks CRX-zipped extensions automatically', () => {
+    cy.wrap(crxpacked.setStorage('local', { myKey: 1 }))
+      .wrap(crxpacked.getStorage('local', 'myKey'))
       .should('deep.eq', { myKey: 1 });
   });
 });

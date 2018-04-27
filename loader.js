@@ -2,6 +2,7 @@ const fs = require('fs-extra');
 const os = require('os');
 const path = require('path');
 const chokidar = require('chokidar');
+const unzipCrx = require('unzip-crx');
 
 const defaultAlias = 'myExtension';
 const hookFilesDir = 'cypress-extension-hooks';
@@ -44,18 +45,20 @@ function copyHookFile(templateFile, destDir, fileName, alias) {
 }
 
 async function buildFiles(opts) {
-  console.log('buildFile', opts);
-  if (!fs.existsSync(opts.source)) throw new Error(`No file found at extension source ${opts.source}`);
-
-  if (!opts.quiet) console.log(`Cypress Extensions: Copying and preparing extension ${opts.alias} from ${opts.source} to ${opts.destDir}`);
+  const stat = await fs.stat(opts.source);
+  if (!opts.quiet) console.log(`Cypress Extensions: ${stat.isDirectory() ? 'Copying' : 'Unpacking'} and preparing extension ${opts.alias} from ${opts.source} to ${opts.destDir}`);
 
   // Copy ext to tmp dir
   await fs.remove(opts.destDir);
-  await fs.copy(opts.source, opts.destDir);
+  if (stat.isDirectory()) {
+    await fs.copy(opts.source, opts.destDir);
+  } else { // assume crx
+    await unzipCrx(opts.source, opts.destDir);
+  }
   await fs.mkdir(path.join(opts.destDir, hookFilesDir));
 
   // Update manifest
-  const manifest = await fs.readJson(path.join(opts.source, 'manifest.json'));
+  const manifest = await fs.readJson(path.join(opts.destDir, 'manifest.json'));
   // Allow extension content scripts in all non-Cypress frames
   const cs = manifest.content_scripts;
   manifest.content_scripts = cs && cs.map(scriptObj => (
@@ -119,7 +122,6 @@ function reset() {
 function buildExtension(userOptions) {
   const buildPromise = Promise.resolve(userOptions)
     .then(createExtensionDefinition)
-    .then((e) => { console.log('SPY', e); return e; })
     .then(storeDefinition)
     .then(buildFiles)
     .then(watch);
