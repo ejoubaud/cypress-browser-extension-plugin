@@ -1,14 +1,13 @@
 /* global window chrome */
-// This file is a template, not a module.
+// This file is a template, not a module
 // It will be added to the extension while the tests run, to let Cypress pass commands
 // to the background tab and access the browser/chrome object and the local storage
-// It MUST be standalone (no require/import will work, this is simple copy, not Webpack)
 // It MAY contain an {{alias}} placeholder, to link it to a specific extension
+// It MAY include JS require statements, as it's then bundled with Browserify
+const log = require('../lib/common').logger({ prefix: 'Cypress ext contentscript' });
+
 const targetWindow = window.top;
 
-
-// Duplicated log function since we can't (yet) use require in templates
-function log(txt, ...rest) { console.log(`%cCypress ext contentscript %c${txt}`, 'color: gray; font-weight: lighter;', 'font-weight: bolder;', ...rest); }
 const logMethod = method => (method ? `.${method}()` : '');
 
 targetWindow.addEventListener('message', function relayCommandsToBackground(event) {

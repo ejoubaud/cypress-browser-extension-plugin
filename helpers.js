@@ -1,13 +1,13 @@
 const nanoid = require('nanoid');
 
+const common = require('./lib/common');
+
+const { responseType, commandType } = common.constants;
+const log = common.logger({ prefix: 'Cypress ext helpers' });
+
 const targetWindow = window.top;
 
 const merge = (...objs) => Object.assign({}, ...objs);
-
-const commandType = 'BrowserCommand';
-const responseType = 'BrowserCommandResponse';
-
-function log(txt, ...rest) { console.log(`%cCypress ext helpers %c${txt}`, 'color: gray; font-weight: lighter;', 'font-weight: bolder;', ...rest); }
 
 // event listener can't reply to window.postMessage, but it can make a window.postMessage
 // in return that we can listen to, with a response unique id to identify what it's replying to
