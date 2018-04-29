@@ -3,6 +3,7 @@ const os = require('os');
 const path = require('path');
 const chokidar = require('chokidar');
 const unzipCrx = require('unzip-crx');
+const browserify = require('browserify');
 
 const defaultAlias = 'myExtension';
 const hookFilesDir = 'cypress-extension-hooks';
@@ -38,10 +39,17 @@ function createExtensionDefinition(userOptions) {
 }
 
 function copyHookFile(templateFile, destDir, fileName, alias) {
-  const templateContent = fs.readFileSync(templateFile, 'utf8');
-  const content = templateContent.replace(new RegExp('{{alias}}', 'g'), alias);
   const destFile = path.resolve(destDir, hookFilesDir, fileName);
-  return fs.writeFile(destFile, content);
+  const distStream = fs.createWriteStream(destFile);
+  browserify(templateFile)
+    .transform('browserify-versionify', { placeholder: '{{alias}}', version: alias })
+    .bundle()
+    .pipe(distStream);
+  return new Promise((resolve, reject) => {
+    // distStream.end(); needed?
+    distStream.on('finish', () => resolve(true));
+    distStream.on('error', reject);
+  });
 }
 
 async function buildFiles(opts) {

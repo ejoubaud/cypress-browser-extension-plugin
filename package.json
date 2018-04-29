@@ -21,6 +21,8 @@
     "eslint-plugin-import": "^2.10.0"
   },
   "dependencies": {
+    "browserify": "^16.2.0",
+    "browserify-versionify": "^1.0.6",
     "chokidar": "^2.0.3",
     "fs-extra": "^5.0.0",
     "nanoid": "^1.0.2",

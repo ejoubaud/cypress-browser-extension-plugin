@@ -188,5 +188,4 @@ But should you ever find yourself calling a method that, for some reason, doesn'
 ## TODO
 
 - Cross-browser compatibility (so far built for Chrome, like Cypress, should work OOTB with FF when supported by Cypress but untested so far)
-- Use browserify/webpack for templates so we can require stuff while still replacing `{{alias}}` placeholders and DRY-up functions/constants
 - Add secure messaging (encryption+nonce+loader generates pwd shared w/ helpers via Cypress config/env?) so visited pages can't exploit `window.postMessage` listeners to abuse your background API (low-priority, see [Security](#security))
