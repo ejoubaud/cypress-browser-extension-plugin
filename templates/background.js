@@ -39,10 +39,10 @@ function executeBrowserCommand(message) {
     if (!method) { // always sync if just accessing property (no method)
       resolve(target);
     } else if (returnType === 'callback') {
-      target[method].apply(this, addPromisifiedCb(args, resolve, reject));
+      target[method].apply(target, addPromisifiedCb(args, resolve, reject));
     } else { // returnType sync or promise
       try {
-        const res = target[message].apply(this, args);
+        const res = target[method].apply(target, args);
         if (res && typeof res.then === 'function') {
           res.then(resolve, reject);
         } else {
