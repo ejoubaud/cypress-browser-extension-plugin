@@ -58,6 +58,23 @@ function sendBrowserCommand({ alias, timeout, debug, returnType }, property, met
   return promise;
 }
 
+function sendBrowserMessage({ alias, timeout, debug, returnType }, content) {
+  const responseId = nanoid(); // Unique ID to identify response
+  const message = {
+    cypressExtType: messageType,
+    responseId,
+    alias,
+    debug,
+    returnType,
+    content,
+  };
+
+  const promise = listenForResponse(message, timeout);
+  if (debug) log(`Sending chrome.runtime.sendMessage() command`, message);
+  targetWindow.postMessage(message, '*');
+  return promise;
+}
+
 function assertPresent(type) { if (typeof type !== 'string') throw new Error('Need to specify extension storage type (local, sync or managed)'); }
 function assertArray(args) { if (typeof args !== 'undefined' && !Array.isArray(args)) throw new Error('execCommand arg should be passed as an array of args, even on single value'); }
 
@@ -86,6 +103,9 @@ module.exports = function createHelpers(userContext = {}) {
     execCommand(property, method, args, opts = {}) {
       assertArray(args);
       return sendBrowserCommand(merge(ctx, opts), property, method, args);
+    },
+    sendMessage(message, opts = {}) {
+      return sendBrowserMessage(merge(ctx, opts), message);
     },
   };
 };
