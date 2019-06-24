@@ -2,7 +2,7 @@ const nanoid = require('nanoid');
 
 const common = require('./lib/common');
 
-const { responseType, commandType } = common.constants;
+const { responseType, commandType, messageType } = common.constants;
 const log = common.logger({ prefix: 'Cypress ext helpers' });
 
 const targetWindow = window.top;
@@ -19,7 +19,11 @@ function listenForResponse(message, timeout) {
         if (message.debug) log(`Got ${message.property}.${message.method}() response`, data, 'in response to:', message);
         targetWindow.removeEventListener('message', windowListener);
         if (data.error) {
-          reject(data.error);
+          if(data.error instanceof Error) {
+            reject(data.error);
+          } else {
+            reject(new Error(data.error));
+          }
         } else {
           resolve(data.response);
         }
