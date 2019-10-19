@@ -82,12 +82,12 @@ async function buildFiles(opts) {
     // Inject background hook into manifest
     manifest.background = manifest.background || {};
     manifest.background.scripts = manifest.background.scripts || [];
-    manifest.background.scripts.push(path.join(hookFilesDir, 'background.js'));
+    manifest.background.scripts.push(path.posix.join(hookFilesDir, 'background.js'));
 
     // Inject content hook into manifest
     if (!manifest.content_scripts) manifest.content_scripts = [];
     manifest.content_scripts.push({
-      js: [path.join(hookFilesDir, 'contentscript.js')],
+      js: [path.posix.join(hookFilesDir, 'contentscript.js')],
       matches: ['<all_urls>'],
       all_frames: false,
     });
