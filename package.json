@@ -1,6 +1,6 @@
 {
   "name": "cypress-browser-extension-plugin",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "End-to-end test your browser extensions with Cypress",
   "main": "loader.js",
   "scripts": {
@@ -12,6 +12,16 @@
     "extension"
   ],
   "author": "Emmanuel Joubaud",
+  "contributors": [
+    {
+      "name": "Frederik Fix",
+      "url": "https://github.com/derfred"
+    },
+    {
+      "name": "PoziWorld",
+      "url": "https://github.com/PoziWorld"
+    }
+  ],
   "license": "ISC",
   "devDependencies": {
     "cypress": "^2.1.0",
