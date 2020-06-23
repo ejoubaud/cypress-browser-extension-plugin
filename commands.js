@@ -5,6 +5,7 @@ const definitions = [
   { cmdMethod: 'setExtensionStorage', helperMethod: 'setStorage', cmdName: 'set ext stor', cmdArgNames: ['type', 'obj', 'opts'], cmdMessage: (args => [args[0], args[1]]) },
   { cmdMethod: 'getExtensionStorage', helperMethod: 'getStorage', cmdName: 'get ext stor', cmdArgNames: ['type', 'keys', 'opts'], cmdMessage: (args => [args[0], args[1]]) },
   { cmdMethod: 'execExtensionCommand', helperMethod: 'execCommand', cmdName: 'exec ext cmd', cmdArgNames: ['property', 'method', 'args', 'opts'], cmdMessage: (args => [args[0], args[1]]) },
+  { cmdMethod: 'sendExtensionMessage', helperMethod: 'sendMessage', cmdName: 'send ext msg', cmdArgNames: ['message'], cmdMessage: (args => args[0]) },
 ];
 
 const findOptsArg = (args, maxLength) => args[maxLength];
