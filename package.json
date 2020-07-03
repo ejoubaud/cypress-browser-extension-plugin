@@ -1,6 +1,6 @@
 {
   "name": "cypress-browser-extension-plugin",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "End-to-end test your browser extensions with Cypress",
   "main": "loader.js",
   "scripts": {
