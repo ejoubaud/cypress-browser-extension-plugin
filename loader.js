@@ -82,12 +82,12 @@ async function buildFiles(opts) {
     // Inject background hook into manifest
     manifest.background = manifest.background || {};
     manifest.background.scripts = manifest.background.scripts || [];
-    manifest.background.scripts.push(path.join(hookFilesDir, 'background.js'));
+    manifest.background.scripts.push(path.posix.join(hookFilesDir, 'background.js'));
 
     // Inject content hook into manifest
     if (!manifest.content_scripts) manifest.content_scripts = [];
     manifest.content_scripts.push({
-      js: [path.join(hookFilesDir, 'contentscript.js')],
+      js: [path.posix.join(hookFilesDir, 'contentscript.js')],
       matches: ['<all_urls>'],
       all_frames: false,
     });
@@ -152,14 +152,14 @@ function onBeforeBrowserLaunch(browser = {}, args) {
     ));
     if (toLoad.length > 0) {
       const dirList = toLoad.map(o => o.destDir).join(',');
-      const existingLoadArgIndex = args.findIndex(arg => (
+      const existingLoadArgIndex = args.args.findIndex(arg => (
         (typeof arg === 'string') && arg.startsWith('--load-extension=')
       ));
       if (existingLoadArgIndex >= 0) {
         // eslint-disable-next-line no-param-reassign
-        args[existingLoadArgIndex] = `${args[existingLoadArgIndex]},${dirList}`;
+        args.args[existingLoadArgIndex] = `${args.args[existingLoadArgIndex]},${dirList}`;
       } else {
-        args.push(`--load-extension=${dirList}`);
+        args.args.push(`--load-extension=${dirList}`);
       }
     }
     return args;
