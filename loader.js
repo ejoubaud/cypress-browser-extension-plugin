@@ -145,7 +145,12 @@ const whenAllBuilt = () => Promise.all(buildPromises);
 
 // for use in the on('before:browser:launch') Cypress hook
 // returns a promise resolving to the browser args once all the tempextensions are built
-function onBeforeBrowserLaunch(browser = {}, args) {
+function onBeforeBrowserLaunch(browser = {}, config) {
+
+  // In Cypress v3, second argument is `args` array
+  // In Cypress v4, second argument is `launchOptions` object with `args` array in it
+  const args = Array.isArray(config) ? config : config.args
+
   return whenAllBuilt().then(() => {
     const toLoad = definitions.filter(opts => (
       !opts.validBrowsers || opts.validBrowsers.includes(browser.name)
@@ -162,7 +167,7 @@ function onBeforeBrowserLaunch(browser = {}, args) {
         args.push(`--load-extension=${dirList}`);
       }
     }
-    return args;
+    return config;
   });
 }
 
