@@ -26,6 +26,7 @@
     "chokidar": "^2.0.3",
     "fs-extra": "^5.0.0",
     "nanoid": "^1.0.2",
+    "serialize-error": "^7.0.1",
     "unzip-crx": "^0.2.0"
   }
 }

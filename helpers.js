@@ -1,4 +1,5 @@
 const nanoid = require('nanoid');
+const { deserializeError } = require('serialize-error');
 
 const common = require('./lib/common');
 
@@ -19,7 +20,7 @@ function listenForResponse(message, timeout) {
         if (message.debug) log(`Got ${message.property}.${message.method}() response`, data, 'in response to:', message);
         targetWindow.removeEventListener('message', windowListener);
         if (data.error) {
-          reject(data.error);
+          reject(deserializeError(data.error));
         } else {
           resolve(data.response);
         }

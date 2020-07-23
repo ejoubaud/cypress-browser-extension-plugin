@@ -5,6 +5,7 @@
 // It MAY contain an {{alias}} placeholder, to link it to a specific extension
 // It MAY include JS require statements, as it's then bundled with Browserify
 const common = require('../lib/common');
+const { serializeError } = require('serialize-error');
 
 const { responseType, commandType } = common.constants;
 const log = common.logger({ prefix: 'Cypress ext bg' });
@@ -63,7 +64,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const cypressExtType = responseType;
     executeBrowserCommand(message).then(
       response => sendResponse({ responseId, cypressExtType, response }),
-      error => sendResponse({ responseId, cypressExtType, error }),
+      error => sendResponse({ responseId, cypressExtType, error: serializeError(error) }),
     );
     // tells browser API the response to sendResponse will be async
     return true;
